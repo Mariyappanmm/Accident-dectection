@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Helmet | Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;900&family=Barlow+Condensed:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            z-index: 10;
+        }
+
+        .login-box {
+            background: linear-gradient(145deg, var(--armor-base), var(--iron-deep));
+            padding: 2.5rem;
+            border-radius: var(--r-xl);
+            border: 1px solid var(--border-mid);
+            box-shadow: 0 40px 70px -20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(71, 163, 217, 0.05);
+            animation: rise-fade 0.5s ease both;
+            position: relative;
+        }
+
+        .login-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cobalt), var(--ice-blue), transparent);
+            opacity: 0.5;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .login-logo .logo-hex {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+
+        .login-box h2 {
+            font-family: var(--font-head);
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--text-bright);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .flash-message {
+            background: var(--red-glow);
+            color: var(--red-hot);
+            border: 1px solid var(--red-border);
+            padding: 0.75rem;
+            border-radius: var(--r-sm);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-family: var(--font-data);
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            animation: alert-flash 2s ease infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-logo">
+                <div class="logo-hex">
+                    <i class="fas fa-helmet-safety" style="color: white;"></i>
+                </div>
+            </div>
+
+            <h2>System Access</h2>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="flash-message">
+                            <!-- // TODO: Error icon -->
+                            <i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('main.login') }}">
+                <div class="form-group">
+                    <label for="username">Operator ID</label>
+                    <input type="text" id="username" name="username" placeholder="Enter username" required autofocus autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Passcode</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password" required autocomplete="off">
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem;">
+                    <i class="fas fa-fingerprint"></i> Authenticate
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

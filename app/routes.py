@@ -1,4 +1,5 @@
-from flask import Blueprint, jsonify, request, current_app, render_template
+from flask import Blueprint, jsonify, request, current_app, render_template, session, redirect, url_for, flash
+from functools import wraps
 from app import db
 from sqlalchemy import text
 from app.models import User, Hospital, Accident
@@ -25,19 +26,50 @@ def normalize_phone(phone):
         return "+91" + phone
     return "+" + phone
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('main.login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@main_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == 'admin' and password == 'admin@123':
+            session['logged_in'] = True
+            return redirect(url_for('main.index'))
+        else:
+            flash('Invalid Operator ID or Passcode')
+            
+    return render_template('login.html')
+
+@main_bp.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('main.login'))
+
 @main_bp.route('/', methods=['GET'])
+@login_required
 def index():
     return render_template('dashboard.html')
 
 @main_bp.route('/accidents-list', methods=['GET'])
+@login_required
 def accidents_list():
     return render_template('accidents.html')
 
 @main_bp.route('/hospitals-map', methods=['GET'])
+@login_required
 def hospitals_map():
     return render_template('hospitals.html')
 
 @main_bp.route('/management', methods=['GET'])
+@login_required
 def management():
     return render_template('management.html')
 
