@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Hospital Map{% endblock %}
+{% block header %}Emergency Response Map{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+    .leaflet-popup-content-wrapper {
+        background: var(--card-bg);
+        color: var(--text-main);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+    }
+    .leaflet-popup-tip {
+        background: var(--card-bg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="map"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
+<script>
+    document.getElementById('nav-map').classList.add('active');
+
+    // Base Layers
+    const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    });
+
+    const satelliteTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
+
+    // Layer Groups
+    const hospitalLayer = L.layerGroup();
+    const accidentLayer = L.layerGroup();
+    const heatLayer = L.heatLayer([], { radius: 25, blur: 15, maxZoom: 17 });
+
+    // Initialize map
+    const map = L.map('map', {
+        center: [11.0168, 76.9558],
+        zoom: 12,
+        layers: [satelliteTiles, hospitalLayer, accidentLayer]
+    });
+
+    const baseMaps = {
+        "Satellite View": satelliteTiles,
+        "Dark Mode": darkTiles
+    };
+
+    const overlayMaps = {
+        "Hospitals 🏥": hospitalLayer,
+        "Accidents 🚨": accidentLayer,
+        "Heat Map 🔥": heatLayer
+    };
+
+    L.control.layers(baseMaps, overlayMaps).addTo(map);
+    L.control.scale().addTo(map);
+
+    const hospitalIcon = L.divIcon({
+        html: '<div style="font-size: 30px; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));">🏥</div>',
+        className: 'custom-div-icon',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
+
+    const accidentIcon = L.divIcon({
+        html: '<div style="font-size: 30px; animation: pulse 1.5s infinite; filter: drop-shadow(0 0 8px rgba(255,0,0,0.6));">🚨</div>',
+        className: 'custom-div-icon',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
+
+    // Add CSS for pulse animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    `;
+    document.head.append(style);
+
+    async function loadMarkers() {
+        try {
+            // Load Hospitals
+            const hResp = await fetch('/api/hospitals');
+            const hospitals = await hResp.json();
+            
+            hospitals.forEach(h => {
+                L.marker([h.latitude, h.longitude], {icon: hospitalIcon})
+                    .addTo(hospitalLayer)
+                    .bindPopup(`
+                        <div style="font-family: 'Outfit'; color: white;">
+                            <strong style="font-size: 1.1rem; color: #0ea5e9;">${h.name}</strong><br>
+                            <hr style="border: 0; border-top: 1px solid #334155; margin: 5px 0;">
+                            <span style="color: #94a3b8;"><i class="fas fa-phone"></i> ${h.phone}</span>
+                        </div>
+                    `);
+            });
+
+            // Load Accidents
+            const aResp = await fetch('/api/accidents');
+            const accidents = await aResp.json();
+            
+            const heatPoints = [];
+            accidents.forEach(a => {
+                L.marker([a.latitude, a.longitude], {icon: accidentIcon})
+                    .addTo(accidentLayer)
+                    .bindPopup(`
+                        <div style="font-family: 'Outfit'; color: white;">
+                            <strong style="color: #ef4444; font-size: 1rem;">🚨 ACCIDENT REPORTED</strong><br>
+                            <hr style="border: 0; border-top: 1px solid #334155; margin: 5px 0;">
+                            <strong>Vehicle:</strong> ${a.vehicle_id}<br>
+                            <strong>Victim:</strong> ${a.user_name}<br>
+                            <span style="font-size: 0.85rem; color: #94a3b8;">${a.time}</span>
+                        </div>
+                    `);
+                heatPoints.push([a.latitude, a.longitude, 0.5]);
+            });
+
+            heatLayer.setLatLngs(heatPoints);
+
+            if (hospitals.length > 0) {
+                map.panTo([hospitals[0].latitude, hospitals[0].longitude]);
+            }
+        } catch (err) {
+            console.error("Error loading map data:", err);
+        }
+    }
+
+    loadMarkers();
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Accident History{% endblock %}
+{% block header %}Accident Records{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Vehicle ID</th>
+                <th>User</th>
+                <th>Timestamp</th>
+                <th>Location (Lat, Lng)</th>
+                <th>Dispatch Hospital</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="accidents-body">
+            <!-- Data injected via JS -->
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('nav-accidents').classList.add('active');
+
+    async function loadAccidents() {
+        const response = await fetch('/api/accidents');
+        const data = await response.json();
+        const tbody = document.getElementById('accidents-body');
+        tbody.innerHTML = '';
+        
+        data.forEach(acc => {
+            const row = `
+                <tr>
+                    <td style="font-weight: 600;">${acc.vehicle_id}</td>
+                    <td>${acc.user_name}</td>
+                    <td style="color: var(--text-muted); font-size: 0.85rem;">${acc.time}</td>
+                    <td><code>${acc.latitude.toFixed(4)}, ${acc.longitude.toFixed(4)}</code></td>
+                    <td>${acc.hospital_name}</td>
+                    <td><span class="status-badge status-${acc.status}">${acc.status.toUpperCase()}</span></td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    loadAccidents();
+</script>
+{% endblock %}

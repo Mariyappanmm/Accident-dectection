@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Management{% endblock %}
+{% block header %}System Management{% endblock %}
+
+{% block content %}
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('users')">Users</button>
+    <button class="tab-btn" onclick="switchTab('hospitals')">Hospitals</button>
+</div>
+
+<!-- Users Management -->
+<div id="users-section">
+    <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between;">
+        <input type="text" placeholder="Search users..." class="btn" style="background: var(--glass-bg); color: white; width: 300px; text-align: left;" onkeyup="filterTable('users-table', this.value)">
+        <button class="btn btn-primary" onclick="openModal('user-modal')"><i class="fas fa-plus"></i> Add User</button>
+    </div>
+    <div class="table-container">
+        <table id="users-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Vehicle ID</th>
+                    <th>Phone</th>
+                    <th>Emergency Contact</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Hospitals Management -->
+<div id="hospitals-section" style="display: none;">
+    <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between;">
+        <input type="text" placeholder="Search hospitals..." class="btn" style="background: var(--glass-bg); color: white; width: 300px; text-align: left;" onkeyup="filterTable('hospitals-table', this.value)">
+        <button class="btn btn-primary" onclick="openModal('hospital-modal')"><i class="fas fa-plus"></i> Add Hospital</button>
+    </div>
+    <div class="table-container">
+        <table id="hospitals-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Location (Lat, Lng)</th>
+                    <th>Phone</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="hospitals-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- User Modal -->
+<div id="user-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('user-modal')">&times;</span>
+        <h2 id="user-modal-title">Add New User</h2>
+        <form id="user-form" onsubmit="saveUser(event)">
+            <input type="hidden" id="user-id">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="user-name" required>
+            </div>
+            <div class="form-group">
+                <label>Vehicle ID</label>
+                <input type="text" id="user-vehicle" required>
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="user-phone" required>
+            </div>
+            <div class="form-group">
+                <label>Family Phone</label>
+                <input type="text" id="user-family" required>
+            </div>
+            <div class="form-group">
+                <label>Blood Group</label>
+                <select id="user-blood">
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Save User</button>
+        </form>
+    </div>
+</div>
+
+<!-- Hospital Modal -->
+<div id="hospital-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('hospital-modal')">&times;</span>
+        <h2 id="hospital-modal-title">Add Hospital</h2>
+        <form id="hospital-form" onsubmit="saveHospital(event)">
+            <input type="hidden" id="hospital-id">
+            <div class="form-group">
+                <label>Hospital Name</label>
+                <input type="text" id="hospital-name" required>
+            </div>
+            <div class="form-group">
+                <label>Latitude</label>
+                <input type="number" step="any" id="hospital-lat" required>
+            </div>
+            <div class="form-group">
+                <label>Longitude</label>
+                <input type="number" step="any" id="hospital-lng" required>
+            </div>
+            <div class="form-group">
+                <label>Emergency Phone</label>
+                <input type="text" id="hospital-phone" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Save Hospital</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('nav-management').classList.add('active');
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.tab-btn[onclick*='${tab}']`).classList.add('active');
+        
+        document.getElementById('users-section').style.display = tab === 'users' ? 'block' : 'none';
+        document.getElementById('hospitals-section').style.display = tab === 'hospitals' ? 'block' : 'none';
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { 
+        document.getElementById(id).style.display = 'none';
+        document.getElementById('user-form').reset();
+        document.getElementById('hospital-form').reset();
+        document.getElementById('user-id').value = '';
+        document.getElementById('hospital-id').value = '';
+    }
+
+    async function loadUsers() {
+        const resp = await fetch('/api/users');
+        const users = await resp.json();
+        const tbody = document.getElementById('users-tbody');
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td>${u.name}</td>
+                <td><code style="color: var(--primary-color)">${u.vehicle_id}</code></td>
+                <td>${u.phone}</td>
+                <td>${u.family_phone}</td>
+                <td>
+                    <button class="btn btn-sm btn-ghost" onclick="editUser(${JSON.stringify(u).replace(/"/g, '&quot;')})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteItem('users', ${u.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function loadHospitals() {
+        const resp = await fetch('/api/hospitals');
+        const hospitals = await resp.json();
+        const tbody = document.getElementById('hospitals-tbody');
+        tbody.innerHTML = hospitals.map(h => `
+            <tr>
+                <td>${h.name}</td>
+                <td>${h.latitude.toFixed(4)}, ${h.longitude.toFixed(4)}</td>
+                <td>${h.phone}</td>
+                <td>
+                    <button class="btn btn-sm btn-ghost" onclick="editHospital(${JSON.stringify(h).replace(/"/g, '&quot;')})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteItem('hospitals', ${h.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function editUser(u) {
+        document.getElementById('user-id').value = u.id;
+        document.getElementById('user-name').value = u.name;
+        document.getElementById('user-vehicle').value = u.vehicle_id;
+        document.getElementById('user-phone').value = u.phone;
+        document.getElementById('user-family').value = u.family_phone;
+        document.getElementById('user-blood').value = u.blood_group;
+        document.getElementById('user-modal-title').innerText = 'Edit User';
+        openModal('user-modal');
+    }
+
+    function editHospital(h) {
+        document.getElementById('hospital-id').value = h.id;
+        document.getElementById('hospital-name').value = h.name;
+        document.getElementById('hospital-lat').value = h.latitude;
+        document.getElementById('hospital-lng').value = h.longitude;
+        document.getElementById('hospital-phone').value = h.phone;
+        document.getElementById('hospital-modal-title').innerText = 'Edit Hospital';
+        openModal('hospital-modal');
+    }
+
+    async function saveUser(e) {
+        e.preventDefault();
+        const id = document.getElementById('user-id').value;
+        const data = {
+            name: document.getElementById('user-name').value,
+            vehicle_id: document.getElementById('user-vehicle').value,
+            phone: document.getElementById('user-phone').value,
+            family_phone: document.getElementById('user-family').value,
+            blood_group: document.getElementById('user-blood').value
+        };
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/users/${id}` : '/api/users';
+        
+        const resp = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        if (resp.ok) { closeModal('user-modal'); loadUsers(); }
+        else { alert("Error saving user. Check if Vehicle ID is duplicate."); }
+    }
+
+    async function saveHospital(e) {
+        e.preventDefault();
+        const id = document.getElementById('hospital-id').value;
+        const data = {
+            name: document.getElementById('hospital-name').value,
+            latitude: document.getElementById('hospital-lat').value,
+            longitude: document.getElementById('hospital-lng').value,
+            phone: document.getElementById('hospital-phone').value
+        };
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/hospitals/${id}` : '/api/hospitals';
+        
+        await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        closeModal('hospital-modal');
+        loadHospitals();
+    }
+
+    async function deleteItem(type, id) {
+        if (!confirm("Are you sure you want to delete this?")) return;
+        await fetch(`/api/${type}/${id}`, { method: 'DELETE' });
+        type === 'users' ? loadUsers() : loadHospitals();
+    }
+
+    function filterTable(tableId, query) {
+        const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+        query = query.toLowerCase();
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
+        });
+    }
+
+    loadUsers();
+    loadHospitals();
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Helmet | {% block title %}Dashboard{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <i class="fas fa-helmet-safety"></i>
+            <span>SmartHelmet</span>
+        </div>
+        <ul class="nav-links">
+            <li>
+                <a href="{{ url_for('main.index') }}" id="nav-dash">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.accidents_list') }}" id="nav-accidents">
+                    <i class="fas fa-car-crash"></i>
+                    <span>Accidents</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.management') }}" id="nav-management">
+                    <i class="fas fa-database"></i>
+                    <span>Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.hospitals_map') }}" id="nav-map">
+                    <i class="fas fa-map-location-dot"></i>
+                    <span>Hospital Map</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <main class="main-content">
+        <header class="header">
+            <h1>{% block header %}{% endblock %}</h1>
+            <p class="text-muted">Smart Helmet Accident Detection & Response System</p>
+        </header>
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block header %}System Overview{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Total Registered Users</h3>
+        <div class="value" id="count-users">-</div>
+    </div>
+    <div class="stat-card">
+        <h3>Accidents Detected</h3>
+        <div class="value" id="count-accidents" style="color: var(--danger);">-</div>
+    </div>
+    <div class="stat-card">
+        <h3>Active Emergencies</h3>
+        <div class="value" id="count-active">-</div>
+    </div>
+    <div class="stat-card">
+        <h3>Hospitals Saved</h3>
+        <div class="value" id="count-hospitals">-</div>
+    </div>
+</div>
+
+<div class="table-container">
+    <div style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 1.25rem;">Recent Incidents</h2>
+        <a href="{{ url_for('main.accidents_list') }}" style="color: var(--primary-color); text-decoration: none; font-size: 0.9rem;">View All</a>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Vehicle ID</th>
+                <th>User</th>
+                <th>Time</th>
+                <th>Nearby Hospital</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="recent-accidents-body">
+            <!-- Data injected via JS -->
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('nav-dash').classList.add('active');
+
+    async function loadStats() {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        document.getElementById('count-users').innerText = data.total_users;
+        document.getElementById('count-accidents').innerText = data.total_accidents;
+        document.getElementById('count-active').innerText = data.active_emergencies;
+        document.getElementById('count-hospitals').innerText = data.total_hospitals;
+    }
+
+    async function loadRecentAccidents() {
+        const response = await fetch('/api/accidents');
+        const data = await response.json();
+        const tbody = document.getElementById('recent-accidents-body');
+        tbody.innerHTML = '';
+        
+        // Only show top 5
+        data.slice(0, 5).forEach(acc => {
+            const row = `
+                <tr>
+                    <td style="font-weight: 600;">${acc.vehicle_id}</td>
+                    <td>${acc.user_name}</td>
+                    <td style="color: var(--text-muted); font-size: 0.85rem;">${acc.time}</td>
+                    <td>${acc.hospital_name}</td>
+                    <td><span class="status-badge status-${acc.status}">${acc.status.toUpperCase()}</span></td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    loadStats();
+    loadRecentAccidents();
+</script>
+{% endblock %}
